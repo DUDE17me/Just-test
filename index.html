@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pluie de cœurs </title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="heartMatrix"></canvas>
+  <script>
+    const canvas = document.getElementById("heartMatrix");
+    const ctx = canvas.getContext("2d");
+
+    // Met à jour la taille du canvas
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    const hearts = [];
+    const colors = ["#ff69b4", "#ff1493", "#ffc0cb", "#ffb6c1"];
+
+    // Fonction pour dessiner un cœur
+    function drawHeart(x, y, size, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.bezierCurveTo(x - size / 2, y - size / 2, x - size, y + size / 3, x, y + size);
+      ctx.bezierCurveTo(x + size, y + size / 3, x + size / 2, y - size / 2, x, y);
+      ctx.fill();
+    }
+
+    // Ajout des cœurs initiaux
+    for (let i = 0; i < 100; i++) {
+      hearts.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        size: Math.random() * 20 + 10,
+        speed: Math.random() * 3 + 1,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        explode: false, // Définit si le cœur doit exploser
+      });
+    }
+
+    // Fonction pour créer une "explosion"
+    function explodeHeart(heart) {
+      const explosionParticles = [];
+      for (let i = 0; i < 20; i++) {
+        explosionParticles.push({
+          x: heart.x,
+          y: heart.y,
+          size: heart.size * 0.2,
+          dx: (Math.random() - 0.5) * 4,
+          dy: (Math.random() - 0.5) * 4,
+          color: heart.color,
+          life: 50 + Math.random() * 50, // Durée de vie de chaque particule
+        });
+      }
+      return explosionParticles;
+    }
+
+    let particles = [];
+
+    // Animation
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = hearts.length - 1; i >= 0; i--) {
+        const heart = hearts[i];
+
+        // Dessine ou anime les cœurs
+        if (!heart.explode) {
+          drawHeart(heart.x, heart.y, heart.size, heart.color);
+          heart.y += heart.speed;
+
+          // Réinitialise le cœur s'il sort de l'écran
+          if (heart.y > canvas.height) {
+            heart.y = -heart.size;
+            heart.x = Math.random() * canvas.width;
+            heart.size = Math.random() * 20 + 10;
+            heart.speed = Math.random() * 3 + 1;
+            heart.color = colors[Math.floor(Math.random() * colors.length)];
+          }
+        } else {
+          // Remplace le cœur par des particules d'explosion
+          particles = particles.concat(explodeHeart(heart));
+          hearts.splice(i, 1); // Supprime le cœur
+        }
+      }
+
+      // Anime les particules d'explosion
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
+        drawHeart(particle.x, particle.y, particle.size, particle.color);
+
+        particle.x += particle.dx;
+        particle.y += particle.dy;
+        particle.life--;
+
+        // Supprime les particules une fois leur durée de vie écoulée
+        if (particle.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Gestion des clics sur les cœurs
+    canvas.addEventListener("click", (event) => {
+      const mouseX = event.clientX;
+      const mouseY = event.clientY;
+
+      for (let heart of hearts) {
+        const distance = Math.sqrt(
+          (mouseX - heart.x) ** 2 + (mouseY - heart.y) ** 2
+        );
+
+        if (distance < heart.size) {
+          heart.explode = true; // Déclenche l'explosion
+          break;
+        }
+      }
+    });
+
+    animate();
+  </script>
+</body>
+</html>
